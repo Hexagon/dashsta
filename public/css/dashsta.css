@@ -55,3 +55,77 @@ a:hover { text-decoration:underline;}
 	float: right;
 }
 
+#content { width: 100%;}
+
+.container {
+	float:left;
+	padding:0px;
+	margin:0px;
+}
+
+.box {
+	float:left;
+	border-radius: 3px;
+	padding:5px;
+	margin:5px;
+}
+
+.box-w1 { width: calc( 10% - 20px ); }
+.box-w2 { width: calc( 20% - 20px ); }
+.box-w3 { width: calc( 30% - 20px ); }
+.box-w4 { width: calc( 40% - 20px ); }
+.box-w5 { width: calc( 50% - 20px ); }
+.box-w6 { width: calc( 60% - 20px ); }
+.box-w7 { width: calc( 70% - 20px ); }
+.box-w8 { width: calc( 80% - 20px ); }
+.box-w9 { width: calc( 90% - 20px ); }
+.box-w10 { width: calc( 100% - 20px ); }
+
+.box-h1 { height: 40px; }
+.box-h2 { height: 80px; }
+.box-h3 { height: 120px; }
+.box-h4 { height: 160px; }
+.box-h5 { height: 200px; }
+.box-h6 { height: 240px; }
+.box-h7 { height: 280px; }
+.box-h8 { height: 320px; }
+.box-h9 { height: 360px; }
+.box-h10 { width: 400px; }
+
+.container-w1 { width: calc( 10% ); }
+.container-w2 { width: calc( 20% ); }
+.container-w3 { width: calc( 30% ); }
+.container-w4 { width: calc( 40% ); }
+.container-w5 { width: calc( 50% ); }
+.container-w6 { width: calc( 60% ); }
+.container-w7 { width: calc( 70% ); }
+.container-w8 { width: calc( 80% ); }
+.container-w9 { width: calc( 90% ); }
+.container-w10 { width: calc( 100% ); }
+
+.container-h1 { height: 60px; }
+.container-h2 { height: 100px; }
+.container-h3 { height: 140px; }
+.container-h4 { height: 180px; }
+.container-h5 { height: 220px; }
+.container-h6 { height: 260px; }
+.container-h7 { height: 300px; }
+.container-h8 { height: 340px; }
+.container-h9 { height: 380px; }
+.container-h10 { width: 420px; }
+
+.container .box-h1 { height: calc(10% - 20px); }
+.container .box-h2 { height: calc(20% - 20px); }
+.container .box-h3 { height: calc(30% - 20px); }
+.container .box-h4 { height: calc(40% - 20px); }
+.container .box-h5 { height: calc(50% - 20px); }
+.container .box-h6 { height: calc(60% - 20px); }
+.container .box-h7 { height: calc(70% - 20px); }
+.container .box-h8 { height: calc(80% - 20px); }
+.container .box-h9 { height: calc(90% - 20px); }
+.container .box-h10 { width: calc(100% - 20px); }
+
+
+.bg-primary { background-color: #766B5A; }
+.bg-secondary { background-color: #665B4A; }
+.bg-tertiary { background-color: #564B3A; }
