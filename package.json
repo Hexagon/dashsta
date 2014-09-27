@@ -1,0 +1,39 @@
+{
+  "name" : "dashsta",
+  "version" : "0.0.1",
+  "description" : "Super awesome realtime dashboard",
+  "main" : "dashsta.js",
+  "subdomain": "dashsta",
+  "analyze": true,
+  "preferGlobal": true,
+  "private": false,
+  "keywords": [
+    "dashboard",
+    "realtime",
+    "statistics",
+    "graph",
+    "graphs",
+    "stats",
+    "in-memory",
+    "RAM",
+    "fandango"
+  ],
+  "author": "Hexagon <Hexagon@GitHub>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Hexagon/dashsta.git"
+  },
+  "bin" : "./dashsta.js",
+  "dependencies": {
+    "express.io": ">= 1.1.13",
+    "sqlite3": "*",
+    "fast-csv": "*"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "devDependencies": {}
+}

@@ -1,0 +1,22 @@
+{
+
+	"name": "example",
+
+	"trigger": {
+		"type": "continous",
+		"interval": "10m"
+	},
+
+	"source": {
+		"type": "csv",
+		"params": {
+			"file": "~/example/*.csv",
+			"filter"
+		}
+	},
+
+	"destination": {
+		"table": "example"
+	}
+
+}

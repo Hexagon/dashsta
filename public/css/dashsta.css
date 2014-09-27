@@ -1,0 +1,57 @@
+/*
+	Color palette
+
+	Primary background: #252420 (Super gray)
+	Secondary background: #151410 (Dark super gray)
+
+	Default foreground: #CACACA (Smooth gray)
+	Primary highligted foreground:	#E6DB74 (Smooth yellow) 
+	Secondary highlighted foreground: #E6DBCA (Smoother yellow) 
+
+	Delimiter: #665B4A ;
+
+*/
+
+html, body { height: 100%; background-color: #151410; ; color:#CACACA; font-size: 12px; font-family: 'Droid Sans'; } 
+html { padding: 0px; margin: 0px;}
+body { padding: 0px; margin: 0px;}
+
+#wrapper { background-color: #252420; padding: 15px; min-height: calc( 100% - 105px);}
+#footer { padding: 15px; padding-top: 5px; }
+
+/* Typography */
+.primary, .primary a { color: #E6DB74; }
+.secondary, .secondary a { color: #E6DBCA; }
+.tertiary, .tertiary a { color: #CACACA; }
+
+.separator { color: #665B4A; }
+.header { font-size: 27px; }
+
+a { text-decoration:none;}
+a:hover { text-decoration:underline;}
+
+/* Layout */
+#header {
+	width: 100%;
+	border-bottom: 1px dotted #766B5A;
+	padding-bottom: 15px;
+	margin-bottom: 15px;
+}
+
+#header_right {
+	padding-right:5px;
+	padding-left:5px;
+	border-radius: 2px;
+	background-color: #665B4A;
+	color: #E6DBCA;
+}
+
+#header_right:hover {
+	background-color: #E6DBCA;
+	color: #665B4A;
+}
+
+.right {
+	float: right;
+}
+
