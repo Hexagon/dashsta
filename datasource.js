@@ -52,8 +52,8 @@ function DataSource (filename) {
     // Store public variables as:
     this.variable = 'hello';
 
-    // Create privileged methods for storing private properties:
-    var _private = bla;
+    // Create privileged methods for managing private properties:
+    var _private = 'blabla';
 
     this.getPrivate = function () {
         return _private;

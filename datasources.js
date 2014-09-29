@@ -34,6 +34,9 @@ var datasources = {
 		  //  Lite krångligare, lite mer error-prone. Ett stil många js-utvecklare inte gillar.
 		  fresh = new DataSource('./datasources/' + file);
 
+		  fresh.variable // 'hello'
+		  fresh._private // undefined
+		  fresh.getPrivate(); // blabla
 		  this.all.push(fresh);
 
 		  console.log('\tDatasource loaded: ',file);
