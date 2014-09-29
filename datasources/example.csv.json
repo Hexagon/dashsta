@@ -3,15 +3,21 @@
 	"name": "example",
 
 	"trigger": {
-		"type": "continous",
-		"interval": "10m"
+		"time": {
+			"h": "*",
+			"y": "*",
+			"h": "*",
+			"h": "*",
+			"h": "*",
+			"h": "*"["00:00:10"][BRAIN OVERLOAD!]
+		}
 	},
 
 	"source": {
 		"type": "csv",
 		"params": {
 			"file": "~/example/*.csv",
-			"filter"
+			"filter": ""
 		}
 	},
 

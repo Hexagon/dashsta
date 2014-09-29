@@ -1,74 +1,81 @@
-var telldus = require('telldus');
+// Using constructor:
+function DataSource (filename,callback) {
 
-var datasource = {
+  // Private variables
+  var _is_running=false;
+
+  // Clarification of public variables
+  this.properties = undefined,
+  this.last_runtime = undefined,
+  this.time_to_run = undefined,
+  this.callback = callback,
+
+  try {
+    _properties = require(filename);
+  } catch(e) {
+    throw(filename + " contains invalid JSON.");
+  }
+
+  // Validate properties
+  // ...
+  // Throw on error
+  // ...
+
+  // Public methods
+  this.isRunning = function () { return _is_running; };
+
+  this.run = function() {
+    // Oh yeah!
+
+
+    // Notify other functions that this datasource is updated!
+    // return this.callback( this.properties );
+  };
+
+}
+
+// Check if it's time to run
+DataSource.prototype.notifyTimeTick = function (d) {
+
+  // Note, this function will run every second, mind the performance
   
-  block: null,
+  var p = this.properties,
+      pt = this.time_to_run;  // The time object should be parsed at constructor, should not be done every second
 
-  readProperties: function(filename) {
+  // WTF?!!?!?!??!! TIME MATCHING=?!?!?!?!
+  if (p.trigger.type=="continous") {
+    if ( this.time_to_run )
 
-  },
+  } else if(p.trigger.type=="daily") {
 
-  // Example for a time trigger, get called every config.triggers.time_tick_ms
-  notifyTimeTick: function() {
-/*
-    var d = new Date();
-      var to_match = d.getHours() + ':' + d.getMinutes();
-      var one_per = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + to_match;
-
-      // Called 06:15:00
-      // The blocker is used to prevent the function from being run multiple times on each matching minute
-      if ( (to_match == '6:15' || to_match == '16:30') && !this.isBlocked(one_per) ) {
-        // Do stuff ...
-      }
-
-      // Called 01:45:00
-      if ( (to_match == '1:45') && !this.isBlocked(one_per) ) {
-        // Do other stuff
-      }*/
-
-  },
-
-  // Blocking function, as we only want to run this once per Y
-  isBlocked: function(one_per) {
-
-    if ( one_per == this.block ) {
-      return true;
-    } else {
-      this.block = one_per;
-      return false;
-    }
+  } else if(p.trigger.type=="once") {
 
   }
 
 };
 
-module.exports = datasource;
+module.exports = DataSource;
 
-// Using constructor:
-
-function DataSource (filename) {
-    // **Connect, do magic**
-    
-    // Store public variables as:
-    this.variable = 'hello';
-
-    // Create privileged methods for managing private properties:
-    var _private = 'blabla';
-
-    this.getPrivate = function () {
-        return _private;
-    };
-
-    this.setPrivate = function (val) {
-        if ('something') {
-            _private = val;
-        }
-    };
+/*
+function TimeoutError (message) {
+  this.name = 'TimeoutError';
+  this.message = (message || '');
 }
 
-DataSource.prototype.notifyTimeTick = function () {
-   console.log(this.getPrivate());
-    console.log(this.variable);
-};
+function RejectedError (message) {
+  this.name = 'RejectedError';
+  this.message = (message || '');
+}
 
-module.exports = DataSource;
+TimeoutError.prototype = Error.prototype;
+RejectedError.prototype = Error.prototype;
+
+var e = new TimeoutError('Load timeout exceeded for x');
+
+(e instanceof Error) // true
+(e instanceof TimeoutError) // true
+throw new TimeoutError('sdfsdfsdf');
+
+Unchaught TimeoutError: sdfsdfsdf
+
+*/
