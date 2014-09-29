@@ -43,3 +43,32 @@ var datasource = {
 };
 
 module.exports = datasource;
+
+// Using constructor:
+
+function DataSource (filename) {
+    // **Connect, do magic**
+    
+    // Store public variables as:
+    this.variable = 'hello';
+
+    // Create privileged methods for storing private properties:
+    var _private = bla;
+
+    this.getPrivate = function () {
+        return _private;
+    };
+
+    this.setPrivate = function (val) {
+        if ('something') {
+            _private = val;
+        }
+    };
+}
+
+DataSource.prototype.notifyTimeTick = function () {
+   console.log(this.getPrivate());
+    console.log(this.variable);
+};
+
+module.exports = DataSource;
