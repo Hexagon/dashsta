@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 var express = require('express.io'),
-    app = express();app.http().io();
+    app = express();app.http().io(),
+    ramdb = require('./ramdb.js');
 
+// Expose all files in /public through HTTP
 app.use(express.static(__dirname + '/public'));
+
+// Try out the ram database
+ramdb.updateDataset('test'); // This should have 2 parameters, the second one beeing a json representation of the table to insert
+ramdb.query("SELECT rowid AS id, test FROM test",function(err,dataset){console.log(dataset)});
 
 app.io.route('status', {
 
