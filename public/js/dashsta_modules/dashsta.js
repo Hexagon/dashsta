@@ -37,8 +37,13 @@ define({
 			c.emit("interface:box",{w:4,h:3,background:'tertiary'});
 
 		// Row 2
-		c.emit("interface:box",{w:4,h:4,background:'primary'});
-		c.emit("interface:container",{w:6,h:4},function(p) {
+		c.emit("interface:box",{w:4,h:6,background:'primary',id:'graph'},function() {
+			g = new Grapho(
+				[1,5,7,6,5,2,5,5,6,7,8,8,9,9,8,7,5,5,6,7,6,5,5,2,4,5,4]
+				,{},true);
+			g.place(document.getElementById('graph'));
+		});
+		c.emit("interface:container",{w:6,h:6},function(p) {
 			c.emit("interface:box",{w:10,h:4,background:'primary',parent:p});
 			c.emit("interface:box",{w:10,h:2,background:'tertiary',parent:p});
 			c.emit("interface:box",{w:10,h:2,background:'tertiary',parent:p});
@@ -50,8 +55,12 @@ define({
 		c.emit("interface:box",{w:4,h:3,background:'secondary'});
 		c.emit("interface:box",{w:2,h:3,background:'primary'});
 		c.emit("interface:box",{w:2,h:3,background:'tertiary'});
+
+
+
 	}); 
 
 	c.emit("host:connect");
+
 
 });

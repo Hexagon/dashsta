@@ -26,15 +26,18 @@ define({
 			components.content[0].innerHTML = '';
 		},
 
-		box = function(d) {
+		box = function(d,done) {
 			var box = document.createElement('div');
 			box.className = 'box box-w'+d.w+' box-h'+d.h+' bg-'+d.background;
-			if("parent" in d) {
-				console.log(d);
+			if ("id" in d) {
+				box.id = d.id;
+			}
+			if ("parent" in d) {
 				d.parent[0].appendChild(box);
 			}
 			else
 				components.content[0].appendChild(box);
+			if ( done !== undefined ) done();
 		},
 
 		container = function(d,done) {
