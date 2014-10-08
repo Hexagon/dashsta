@@ -66,16 +66,13 @@
 		}
 
 		// Setup default settings
-		this.axises = [];
+		this.yAxises = [];
+		this.xAxises = [];
+		this.datasets = [];
 
 		this.container = {
 			width: 'auto',
 			height: 'auto'
-		};
-
-		this.x = {
-			showAxis: false,
-			showLabels: false
 		};
 
 		// If the user has defined a parent element in the settings object,
@@ -109,66 +106,110 @@
 	}
 
 	/**
-	 * Check that a axist exists, if not, initiate it
+	 * Check that y axis exists, if not, initiate it
 	 * @param  {Integer} index Axis index, starting from 1
 	 * @return {Object}                `this`
 	 */
-	prot.initAxis = function (index, properties) {
+	prot.initYAxis = function (props) {
+
 		var defaults = {
-			yMin: 'auto',
-			yMax: 'auto',
-			yMinVal: Infinity,
-			yMaxVal: -Infinity,
-			yCenter: 0,
-			series: []
-		};
+				min: 'auto',
+				max: 'auto',
+				minVal: Infinity,
+				maxVal: -Infinity,
+				center: 0
+			},
+			index = props.axis;
+
+
 
 		if (typeof index === 'number' && isFinite(index) && index % 1 ===0) {
-			if (this.axises[index] === undef) {
+
+			if (this.yAxises[index] === undef) {
 
 				// Merge properties, if passed
-				if (typeof properties === 'object') {
-					defaults = merge(defaults, properties);
+				if (typeof props === 'object') {
+					defaults = merge(defaults, props);
 				}
 
-				this.axises[index] = defaults;
+				this.yAxises[index] = defaults;
 
+			} else {
+
+				// Merge current with new settings, if passed
+				if (typeof props === 'object') {
+
+					defaults = merge(this.yAxises[index], props);
+					this.yAxises[index] = defaults;
+
+				}
 			}
 		}
+
 
 		// Chain
 		return this;
 	};
 
 	/**
-	 * Add series
-	 * @param  {Object} series object containing data, or pure data array
+	 * Check that x axis exists, if not, initiate it
+	 * @param  {Integer} index Axis index, starting from 1
 	 * @return {Object}                `this`
 	 */
-	prot.addSeries = function (series) {
-		var seriesIsArray = isArray(series);
+	prot.initXAxis = function (props) {
+
+		var defaults = {
+				min: 'auto',
+				max: 'auto',
+				minVal: Infinity,
+				maxVal: -Infinity,
+				values: []
+			},
+			index = props.axis;
+
+		if (typeof index === 'number' && isFinite(index) && index % 1 ===0) {
+			if (this.xAxises[index] === undef) {
+
+				// Merge properties, if passed
+				if (typeof props === 'object') {
+					defaults = merge(defaults, props);
+				}
+
+				this.xAxises[index] = defaults;
+
+			}
+		}
+
+		// ToDo: Merge values
+
+		// Chain
+		return this;
+	};
+
+	/**
+	 * Add dataset
+	 * @param  {Object} dataset object containing data, or pure data array
+	 * @return {Object}                `this`
+	 */
+	prot.addDataset = function (dataset) {
+		var datasetIsArray = isArray(dataset);
 
 		// Check that we got some type of valid object as parameter
-		if (typeof series !== 'object' ) {
+		if (typeof dataset !== 'object' ) {
 			return this;
-		} else if (!seriesIsArray && !series.data) {
+		} else if (!datasetIsArray && !dataset.data) {
 			return this;
 		}
 
-		// Define some reasonable defaults for each series
+		// Define some reasonable defaults for each dataset
 		var defaults = {
-
-			// All types
-			yAxis: 1,
 
 			type: 'line',
 
-			yMin: 'auto',
-			yMax: 'auto',
+			x: { axis: 1 },
+			y: { axis: 1 },
 
-			yCenter: 0,
-
-			// type: 'line'
+			// type: 'line' or 'area'
 			lineWidth: 2,
 			lineSmooth: true,
 			strokeStyle: '#9494BA',
@@ -178,18 +219,19 @@
 			barWidthPrc: 90 
 		};
 
-		// `series` can be either an array or an object.
-		if (seriesIsArray) {
-			defaults.data = series;
+		// `dataset` can be either an array or an object.
+		if (datasetIsArray) {
+			defaults.data = dataset;
 		} else {
-			defaults = merge(defaults, series);
+			defaults = merge(defaults, dataset);
 		}
 
 		// Make sure the axis exists
-		this.initAxis(defaults.yAxis, { yMin: defaults.yMin, yMax: defaults.yMax, yCenter: defaults.yCenter });
+		this.initYAxis(defaults.y);
+		this.initXAxis(defaults.x);
 
-		// Push series to axis
-		this.pushSeries(defaults);
+		// Push dataset to axis
+		this.pushDataset(defaults);
 
 		// Redraw, but only if the object is fully initiated
 		if (this.done === true) this.redraw();
@@ -199,18 +241,43 @@
 	};
 
 	/**
-	 * Push finished series object to axis
-	 * @param  {Object} series object containing data, or pure data array
+	 * Push finished datasets object to axis
+	 * @param  {Object} datasets object containing data, or pure data array
 	 * @return {Object}                `this`
 	 */
-	prot.pushSeries = function (series) {
-		var yAxis = this.axises[series.yAxis];
+	prot.pushDataset = function (dataset) {
 
-		// Update axis min/max of axis, last series of axis has the control
-		yAxis.yMaxVal = yAxis.yMax !== 'auto' ? yAxis.yMax : Math.max(Math.max.apply(null, series.data), yAxis.yMaxVal);
-		yAxis.yMinVal = yAxis.yMin !== 'auto' ? yAxis.yMin : Math.min(Math.min.apply(null, series.data), yAxis.yMinVal);
+		//console.log(dataset.y.axis,this.yAxises);
 
-		yAxis.series.push(series);
+		var yAxis = this.yAxises[dataset.y.axis],
+			xAxis = this.xAxises[dataset.x.axis],
+			i,
+			data,
+			cleanDataY = [],
+			cleanDataX = [];
+
+		// If we got a single element dataset ( [4,3,2,...] , expand it into [ [0,4] , [1,3] , [2,2] , ]
+		if ( !isArray(dataset.data[0]) ) {
+			for(i=0;i<dataset.data.length;i++) {
+				cleanDataY[i] = dataset.data[i];
+				cleanDataX[i] = i;
+				dataset.data[i] = [i,dataset.data[i]];
+			}
+		} else {
+			for(i=0;i<dataset.data.length;i++) {
+				cleanDataY[i] = dataset.data[i][1];
+				cleanDataX[i] = dataset.data[i][0];
+			}
+		}
+
+		// Update axis min/max of axis, last dataset of axis has the control
+		yAxis.maxVal = yAxis.max !== 'auto' ? yAxis.max : Math.max(Math.max.apply(null, cleanDataY), yAxis.maxVal);
+		yAxis.minVal = yAxis.min !== 'auto' ? yAxis.min : Math.min(Math.min.apply(null, cleanDataY), yAxis.minVal);
+
+		xAxis.maxVal = xAxis.max !== 'auto' ? xAxis.max : Math.max(Math.max.apply(null, cleanDataX), xAxis.maxVal);
+		xAxis.minVal = xAxis.min !== 'auto' ? xAxis.min : Math.min(Math.min.apply(null, cleanDataX), xAxis.minVal);
+
+		this.datasets.push(dataset);
 
 		// Chain
 		return this;
@@ -257,17 +324,19 @@
 		/**
 		 * Renders Line and Area chart
 		 * @param {Object} graph The Grapho object
-		 * @param {Array} serie The data series
-		 * @param {Object} axis  Axis information
+		 * @param {Array} dataset The data datasets
 		 */
-		function RenderLineAndArea (graph, serie, axis) {
-			var i, point,
+		function RenderLineAndArea (graph, dataset) {
+			var i, point, skip_i,
 				
-				data	= serie.data,
-				margin 	= serie.lineWidth / 2,
+				data	= dataset.data,
+				margin 	= dataset.lineWidth / 2,
 
-				min 	= axis.yMinVal,
-				max 	= axis.yMaxVal,
+				yAxis 	= graph.yAxises[dataset.y.axis],
+				xAxis 	= graph.xAxises[dataset.x.axis],
+
+				min 	= yAxis.minVal,
+				max 	= yAxis.maxVal,
 
 				inner_height 	= graph.h - margin,
 				inner_width 	= graph.w - margin,
@@ -279,32 +348,42 @@
 
 			ctx.beginPath();
 
-			i = 0;
-			while ((point = data[i]) || point === 0) {
-				px = round(margin + (i * (inner_width / (data.length - 1))));	// Pixel x
-				py = round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
-				npx = round(margin + (i + 1) * (inner_width / (data.length - 1))); // Next pixel x
-				npy = round(margin + inner_height - (data[i + 1] - min) / (max - min) * inner_height); // Next pixel y
+			skip_i = xAxis.minVal;
+			for(i=xAxis.minVal;i<=xAxis.maxVal;i++) {
+				point = data[skip_i];
 
-				if (i === 0) {
-					ctx.moveTo(px, py);
-				} else if (i < data.length - 2 && serie.lineSmooth) {
-					ctx.quadraticCurveTo(px, py, (px + npx) / 2, (py + npy) / 2);
-				} else if (i < data.length && serie.lineSmooth) {
-					ctx.quadraticCurveTo(px, py, npx, npy);
-				} else {
-					ctx.lineTo(px, py);
+				// We might need to skip some points that are not in the dataset
+				if( point !== undefined && point[0] == i) {
+					point = point[1];
+
+					px = round(margin + (i * (inner_width / (xAxis.maxVal - xAxis.minVal + 1 - 1))));	// Pixel x
+					py = round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
+					npx = ( data[skip_i + 1] ) ? round(margin + (i + data[skip_i+1][0]-data[skip_i][0]) * (inner_width / (xAxis.maxVal - xAxis.minVal + 1 - 1))) : 0; // Next pixel x
+					npy = ( data[skip_i + 1] ) ? round(margin + inner_height - (data[skip_i + 1][1] - min) / (max - min) * inner_height) : 0; // Next pixel y
+
+					if (skip_i === 0) {
+						ctx.moveTo(px, py);
+					} else if (skip_i < data.length - 2 && dataset.lineSmooth) {
+						ctx.quadraticCurveTo(px, py, (px + npx) / 2, (py + npy) / 2);
+						//ctx.quadraticCurveTo(px, py, npx, npy);
+					} else if (skip_i < data.length - 1 && dataset.lineSmooth) {
+						ctx.quadraticCurveTo(px, py, npx, npy);
+					} else {
+						ctx.lineTo(px, py);
+					}
+
+					skip_i++;
+
 				}
 
-				i++;
 			}
 
-			ctx.lineWidth = serie.lineWidth;
-			ctx.strokeStyle = serie.strokeStyle;
+			ctx.lineWidth = dataset.lineWidth;
+			ctx.strokeStyle = dataset.strokeStyle;
 			ctx.stroke();
 
-			if (serie.type === 'area') {
-				cy = round(margin + inner_height - (axis.yCenter - min) / (max - min) * inner_height); // Center pixel y
+			if (dataset.type === 'area') {
+				cy = round(margin + inner_height - (yAxis.center - min) / (max - min) * inner_height); // Center pixel y
 
 				ctx.lineTo(px, cy); // Move to center last, in case of area
 				ctx.lineTo(round(margin), cy); // Move to center last, in case of area
@@ -313,7 +392,7 @@
 				ctx.lineWidth = 0;
 				ctx.stroke();
 
-				ctx.fillStyle = serie.fillStyle;	
+				ctx.fillStyle = dataset.fillStyle;	
 				ctx.fill();
 			}
 		}
@@ -321,38 +400,51 @@
 		/**
 		 * Renders a bar chart
 		 * @param {Object} graph The Grapho object
-		 * @param {Array} serie The data series
-		 * @param {Object} axis  Axis information
+		 * @param {Array} dataset The data datasets
 		 */
-		function RenderBarChart (graph, serie, axis) {
-			var i, point,
+		function RenderBarChart (graph, dataset) {
+			var i, point, skip_i,
 				
-				data	= serie.data,
+				data	= dataset.data,
 				margin	= 1,
 
-				min		= axis.yMinVal,
-				max		= axis.yMaxVal,
-				center	= axis.yCenter,
+				yAxis 	= graph.yAxises[dataset.y.axis],
+				xAxis 	= graph.xAxises[dataset.x.axis],
+
+				min		= yAxis.minVal,
+				max		= yAxis.maxVal,
+				center	= yAxis.center,
 
 				inner_height 	= graph.h - margin,
-				base_width 		= ((graph.w - margin) / data.length),
-				bar_spacing 	= base_width - (base_width * serie.barWidthPrc / 100),
+				base_width 		= ((graph.w - margin) / (xAxis.maxVal - xAxis.minVal + 1)), // This should be divided with the minimum distance between steps
+				bar_spacing 	= base_width - (base_width * dataset.barWidthPrc / 100),
 				bar_width	 	= base_width - bar_spacing,
 
 				px, bt, bb, py, bh;
 
-			graph.ctx.fillStyle = serie.fillStyle;
+			graph.ctx.fillStyle = dataset.fillStyle;
 
-			i = 0;
-			while ((point = data[i++]) || point === 0) {
-				px = round(margin + bar_spacing / 2 + (base_width * (i - 1)));
-				bt = (point <= center) ? center : point; // Bar top
-				bb = (point > center) ? center : point; // Bar bottom
-				py = round(margin + inner_height - (bt - min) / (max - min) * inner_height);
-				bh = round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
+			skip_i = xAxis.minVal;
+			for(i=xAxis.minVal;i<=xAxis.maxVal;i++) {
+				point = data[skip_i];
 
-				graph.ctx.fillRect(px, py, bar_width, bh);
+				// We might need to skip some points that are not in the dataset
+				if( point !== undefined && point[0] == i) {
+					point = point[1];
+
+					px = round(margin + bar_spacing / 2 + (base_width * i));
+					bt = (point <= center) ? center : point; // Bar top
+					bb = (point > center) ? center : point; // Bar bottom
+					py = round(margin + inner_height - (bt - min) / (max - min) * inner_height);
+					bh = round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
+
+					graph.ctx.fillRect(px, py, bar_width, bh);
+
+					skip_i++;
+				}
+			
 			}
+
 		}
 
 		/**
@@ -361,26 +453,19 @@
 		 * @return {Object} `this`
 		 */
 		return function () {
-			var i, x,
-				serie,
-				axis;
+			var i,
+				dataset;
 
-			if (this.axises.length) {
-				// Clear canvas before drawing
-				this.ctx.clearRect(0, 0, this.w, this.h);
+			// Clear canvas before drawing
+			this.ctx.clearRect(0, 0, this.w, this.h);
 
-				i = 1; // Why one-based?
-				while ((axis = this.axises[i++])) {
-
-					x = 0;
-					while ((serie = axis.series[x++])) {
-						if (serie.type === 'bar') {
-							RenderBarChart(this, serie, axis);
-						} else if (serie.type === 'line' || serie.type === 'area') {
-							RenderLineAndArea(this, serie, axis);
-						} 
-					}
-				}
+			i = 0;
+			while ((dataset = this.datasets[i++])) {
+				if (dataset.type === 'bar') {
+					RenderBarChart(this, dataset);
+				} else if (dataset.type === 'line' || dataset.type === 'area') {
+					RenderLineAndArea(this, dataset);
+				} 
 			}
 
 			return this;
