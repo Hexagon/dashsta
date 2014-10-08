@@ -36,7 +36,7 @@ var datasources = {
 
 			}
 
-		};
+		}
 
 		// Start time tick notifier
 		this.notifyTimeTick();
@@ -46,10 +46,10 @@ var datasources = {
 
 		// Notify all triggers of time tick
 		var d = new Date().now();
-		for( var i=0 ; i<this.all.length ; i++ ) if(this.all[i].notifyTimeTick != undefined) this.all[i].notifyTimeTick(d);
+		for( var i=0 ; i<this.all.length ; i++ ) if(this.all[i].notifyTimeTick !== undefined) this.all[i].notifyTimeTick(d);
 
 		// Recurse to infinity ( or at least until the power goes out! )
-		setTimeout(function() { this.notifyTimeTick() }.bind(this), 1000 );
+		setTimeout(function() { this.notifyTimeTick(); }.bind(this), 1000 );
 
 	}
 };

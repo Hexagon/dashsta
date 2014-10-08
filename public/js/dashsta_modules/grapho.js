@@ -34,7 +34,10 @@
 		}
 
 		// Own properties are enumerated firstly, so to speed up, if last one is own, then all properties are own.
-		for (key in it) {}
+		
+		// Why empty block? 
+		// for (key in it) {}
+
 		return key === undef || it.hasOwnProperty(key);
 	}
 
@@ -189,7 +192,7 @@
 		this.pushSeries(defaults);
 
 		// Redraw, but only if the object is fully initiated
-		if (this.done) this.redraw();
+		if (this.done === true) this.redraw();
 
 		// Chain
 		return this;
@@ -236,11 +239,11 @@
 	 */
 	prot.remove = function () {
 		if (this.container.width === 'auto' || this.container.height === 'auto') {
-			window.removeEventListener('resize', resize);
+			window.removeEventListener('resize', this.resize);
 		}
 
 		// ToDo, remove actual element
-		canvas.parentElement.removeChild(canvas);
+		this.canvas.parentElement.removeChild(this.canvas);
 
 		return this;
 	};
@@ -325,11 +328,11 @@
 			var i, point,
 				
 				data	= serie.data,
-				margin 	= 1,
+				margin	= 1,
 
-				min 	= axis.yMinVal,
-				max 	= axis.yMaxVal,
-				center 	= axis.yCenter,
+				min		= axis.yMinVal,
+				max		= axis.yMaxVal,
+				center	= axis.yCenter,
 
 				inner_height 	= graph.h - margin,
 				base_width 		= ((graph.w - margin) / data.length),

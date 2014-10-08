@@ -17,7 +17,7 @@ define({
 		// DOM element shortcuts
 		components = {
 			content: $('#content')
-		}
+		},
 
 		// Private methods
 

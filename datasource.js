@@ -5,10 +5,10 @@ function DataSource (filename,callback) {
   var _is_running=false;
 
   // Clarification of public variables
-  this.properties = undefined,
-  this.last_runtime = undefined,
-  this.time_to_run = undefined,
-  this.callback = callback,
+  this.properties = undefined;
+  this.last_runtime = undefined;
+  this.time_to_run = undefined;
+  this.callback = callback;
 
   try {
     _properties = require(filename);
@@ -44,7 +44,7 @@ DataSource.prototype.notifyTimeTick = function (d) {
 
   // WTF?!!?!?!??!! TIME MATCHING=?!?!?!?!
   if (p.trigger.type=="continous") {
-    if ( this.time_to_run )
+    //if ( this.time_to_run )
 
   } else if(p.trigger.type=="daily") {
 
