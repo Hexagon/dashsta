@@ -3,7 +3,7 @@
 		// AMD. Register as an anonymous module.
 		define([], factory);
 	} else {
-		// Attaches to the current context.
+		// Attaches to the current ctx.
 		self.Grapho = factory();
 	}
 }(this, function () {
@@ -12,7 +12,8 @@
 		toString = Object.prototype.toString,
 		isArray = Array.isArray || function (it) {
 			return toString.call(it) == '[object Array]';
-		};
+		},
+		prot = Grapho.prototype;
 
 	function isUntypedObject (it) {
 		var key;
@@ -72,8 +73,6 @@
 			showLabels: false,
 		};
 
-		this.debug = false;
-
 		// If the user has defined a parent element in the settings object,
 		// save it and remove it from the settings so that it won't be merged into `this`.
 		if (settings.place) {
@@ -90,10 +89,10 @@
 		this.id = graphos.push(this) - 1;
 
 		this.canvas = document.createElement('canvas');
-		this.context = this.canvas.getContext('2d');
-		this.width = 0;
-		this.height = 0;
-		this.destination = 0;
+		this.ctx = this.canvas.getContext('2d');
+		this.w = 0;
+		this.h = 0;
+		this.dest = 0;
 
 		// Call the this.place() method if the user has specified an parent.
 		if (place) {
@@ -109,7 +108,7 @@
 	 * @param  {Integer} index Axis index, starting from 1
 	 * @return {Object}                `this`
 	 */
-	Grapho.prototype.initAxis = function (index, properties) {
+	prot.initAxis = function (index, properties) {
 		var defaults = {
 			yMin: 'auto',
 			yMax: 'auto',
@@ -129,10 +128,7 @@
 
 				this.axises[index] = defaults;
 
-				if (this.debug) console.info('Grapho.checkAxis: New axis with index ', index, 'created');
 			}
-		} else {
-			console.error('Grapho.checkAxis: Invalid yAxis index received, should be integer >= 1');
 		}
 
 		// Chain
@@ -144,17 +140,13 @@
 	 * @param  {Object} series object containing data, or pure data array
 	 * @return {Object}                `this`
 	 */
-	Grapho.prototype.addSeries = function (series) {
+	prot.addSeries = function (series) {
 		var seriesIsArray = isArray(series);
-
-		if (this.debug) console.info('Adding series');
 
 		// Check that we got some type of valid object as parameter
 		if (typeof series !== 'object' ) {
-			console.error('Grapho.addSeries: series does not seem to be a valid javascript object.');
 			return this;
 		} else if (!seriesIsArray && !series.data) {
-			console.error('Grapho.addSeries: passed parameter is neither an array, nor containing series.data.');
 			return this;
 		}
 
@@ -193,8 +185,7 @@
 
 		// Push series to axis
 		this.pushSeries(defaults);
-		if (this.debug) console.info('Pushing generated series object to axis', defaults);
-		
+
 		// Redraw, but only if the object is fully initiated
 		if (this.done) this.redraw();
 
@@ -207,10 +198,8 @@
 	 * @param  {Object} series object containing data, or pure data array
 	 * @return {Object}                `this`
 	 */
-	Grapho.prototype.pushSeries = function (series) {
+	prot.pushSeries = function (series) {
 		var yAxis = this.axises[series.yAxis];
-
-		if (this.debug) console.info('Pushing series', series );
 
 		// Update axis min/max of axis, last series of axis has the control
 		yAxis.yMaxVal = yAxis.yMax !== 'auto' ? yAxis.yMax : Math.max(Math.max.apply(null, series.data), yAxis.yMaxVal);
@@ -227,15 +216,13 @@
 	 * @param  {Element} newDestination Destination element
 	 * @return {Object}                `this`
 	 */
-	Grapho.prototype.place = function (newDestination) { 
+	prot.place = function (newDestination) { 
 		var method = (newDestination && (newDestination.appendChild ? 'appendChild' : 'append'));
 
 		if (method) {
-			this.destination = newDestination;
-			this.destination[method](this.canvas);
+			this.dest = newDestination;
+			this.dest[method](this.canvas);
 			this.resize(this);
-		} else if (this.debug) {
-			console.error('Graph placed in invalid destination');
 		}
 
 		return this;
@@ -245,7 +232,7 @@
 	 * Remove this graph from the current destination
 	 * @return {Object} `this`.
 	 */
-	Grapho.prototype.remove = function () {
+	prot.remove = function () {
 		if (this.container.width === 'auto' || this.container.height === 'auto') {
 			window.removeEventListener('resize', resize);
 		}
@@ -260,7 +247,7 @@
 	 * Redraws the canvas
 	 * @return {Object} `this`.
 	 */
-	Grapho.prototype.redraw = (function () {
+	prot.redraw = (function () {
 
 		/**
 		 * Renders Line and Area chart
@@ -278,17 +265,17 @@
 				max 	= axis.yMaxVal,
 				center 	= axis.yCenter,
 
-				inner_height 	= graph.height - margin,
-				inner_width 	= graph.width - margin,
+				inner_height 	= graph.h - margin,
+				inner_width 	= graph.w - margin,
 
 				px, py, cy, npx, npy,
 
 				fpx = Math.round(margin), // First pixel x;
 
 				// Shortcuts
-				context = graph.context;	
+				ctx = graph.ctx;	
 
-			context.beginPath();
+			ctx.beginPath();
 
 			i = 0;
 			while ((point = data[i]) || point === 0) {
@@ -300,38 +287,37 @@
 				npy = Math.round(margin + inner_height - (nextPoint - min) / (max - min) * inner_height); // Next pixel y
 
 				if (i === 0) {
-					context.moveTo(px, py);
+					ctx.moveTo(px, py);
 				} else if (i < data.length - 2 && serie.lineSmooth) {
 					xc = (px + npx) / 2;
 					yc = (py + npy) / 2;
 
-					context.quadraticCurveTo(px, py, xc, yc);
+					ctx.quadraticCurveTo(px, py, xc, yc);
 				} else if (i < data.length && serie.lineSmooth) {
-					context.quadraticCurveTo(px, py, npx, npy);
+					ctx.quadraticCurveTo(px, py, npx, npy);
 				} else {
-					context.lineTo(px, py);
+					ctx.lineTo(px, py);
 				}
 
 				i++;
 			}
 
-			context.lineWidth = serie.lineWidth;
-			context.strokeStyle = serie.strokeStyle;
-			context.stroke();
+			ctx.lineWidth = serie.lineWidth;
+			ctx.strokeStyle = serie.strokeStyle;
+			ctx.stroke();
 
 			if (serie.type === 'area') {
 				cy = Math.round(margin + inner_height - (center - min) / (max - min) * inner_height); // Center pixel y
 
-				context.lineTo(px, cy); // Move to center last, in case of area
-				context.lineTo(fpx, cy); // Move to center last, in case of area
+				ctx.lineTo(px, cy); // Move to center last, in case of area
+				ctx.lineTo(fpx, cy); // Move to center last, in case of area
 
 				// Empty stroke, as we just want to move the cursor
-				context.strokeStyle = 'rgba(0,0,0,0)';
-				context.lineWidth = 0;
-				context.stroke();
+				ctx.lineWidth = 0;
+				ctx.stroke();
 
-				context.fillStyle = serie.fillStyle;	
-				context.fill();
+				ctx.fillStyle = serie.fillStyle;	
+				ctx.fill();
 			}
 		}
 
@@ -351,15 +337,14 @@
 				max 	= axis.yMaxVal,
 				center 	= axis.yCenter,
 
-				inner_height 	= graph.height - margin,
-				inner_width 	= graph.width - margin,
-				base_width 		= (inner_width / data.length),
+				inner_height 	= graph.h - margin,
+				base_width 		= ((graph.w - margin) / data.length),
 				bar_spacing 	= base_width - (base_width * serie.barWidthPrc / 100),
 				bar_width	 	= base_width - bar_spacing,
 
 				px, bt, bb, py, bh;
 
-			graph.context.fillStyle = serie.fillStyle;
+			graph.ctx.fillStyle = serie.fillStyle;
 
 			i = 0;
 			while ((point = data[i++]) || point === 0) {
@@ -369,7 +354,7 @@
 				py = Math.round(margin + inner_height - (bt - min) / (max - min) * inner_height);
 				bh = Math.round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
 
-				graph.context.fillRect(px, py, bar_width, bh);
+				graph.ctx.fillRect(px, py, bar_width, bh);
 			}
 		}
 
@@ -383,11 +368,9 @@
 				serie,
 				axis;
 
-			if (this.debug) console.info('Redrawing canvas');
-
 			if (this.axises.length) {
 				// Clear canvas before drawing
-				this.context.clearRect(0, 0, this.width, this.height);
+				this.ctx.clearRect(0, 0, this.w, this.h);
 
 				i = 1; // Why one-based?
 				while ((axis = this.axises[i++])) {
@@ -411,19 +394,17 @@
 	 * Something something
 	 * @return {Object} `this`.
 	 */
-	Grapho.prototype.resize = function () {
-		if ((this.width = this.container.width) === 'auto') {
-			this.width = getComputedStyle(this.destination, null).getPropertyValue('width');
+	prot.resize = function () {
+		if ((this.w = this.container.width) === 'auto') {
+			this.w = getComputedStyle(this.dest, null).getPropertyValue('width');
 		}
 
-		if ((this.height = this.container.height) === 'auto') {
-			this.height = getComputedStyle(this.destination, null).getPropertyValue('height');
+		if ((this.h = this.container.height) === 'auto') {
+			this.h = getComputedStyle(this.dest, null).getPropertyValue('height');
 		}
 
-		this.canvas.height = this.height = parseInt(this.height);
-		this.canvas.width = this.width = parseInt(this.width);
-
-		if (this.debug) console.info('Resizing canvas, new dimensions:', this.destination.clientWidth, this.canvas.width, this.canvas.height);
+		this.canvas.height = this.h = parseInt(this.h);
+		this.canvas.width = this.w = parseInt(this.w);
 
 		this.redraw();
 
