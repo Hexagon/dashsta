@@ -9,6 +9,8 @@
 }(this, function () {
 	// A collection of all instantiated Grapho's
 	var graphos = [],
+		undef,
+		round = Math.round,
 		toString = Object.prototype.toString,
 		isArray = Array.isArray || function (it) {
 			return toString.call(it) == '[object Array]';
@@ -33,14 +35,14 @@
 
 		// Own properties are enumerated firstly, so to speed up, if last one is own, then all properties are own.
 		for (key in it) {}
-		return key === undefined || it.hasOwnProperty(key);
+		return key === undef || it.hasOwnProperty(key);
 	}
 
 	function merge (target, source) {
 		var name;
 
 		for (name in source) {
-			if (source[name] !== undefined) {
+			if (source[name] !== undef) {
 				if (target[name] && toString.call(target[name]) === '[object Object]' && isUntypedObject(source[name])) {
 					merge(target[name], source[name]);
 				} else {
@@ -70,14 +72,14 @@
 
 		this.x = {
 			showAxis: false,
-			showLabels: false,
+			showLabels: false
 		};
 
 		// If the user has defined a parent element in the settings object,
 		// save it and remove it from the settings so that it won't be merged into `this`.
 		if (settings.place) {
 			place = settings.place;
-			settings.place = undefined;
+			settings.place = undef;
 		}
 
 		// Merge the user settings into `this`
@@ -119,7 +121,7 @@
 		};
 
 		if (typeof index === 'number' && isFinite(index) && index % 1 ===0) {
-			if (this.axises[index] === undefined) {
+			if (this.axises[index] === undef) {
 
 				// Merge properties, if passed
 				if (typeof properties === 'object') {
@@ -256,21 +258,18 @@
 		 * @param {Object} axis  Axis information
 		 */
 		function RenderLineAndArea (graph, serie, axis) {
-			var i, point, nextPoint,
+			var i, point,
 				
 				data	= serie.data,
 				margin 	= serie.lineWidth / 2,
 
 				min 	= axis.yMinVal,
 				max 	= axis.yMaxVal,
-				center 	= axis.yCenter,
 
 				inner_height 	= graph.h - margin,
 				inner_width 	= graph.w - margin,
 
 				px, py, cy, npx, npy,
-
-				fpx = Math.round(margin), // First pixel x;
 
 				// Shortcuts
 				ctx = graph.ctx;	
@@ -279,20 +278,15 @@
 
 			i = 0;
 			while ((point = data[i]) || point === 0) {
-				nextPoint = data[i + 1];
-
-				px = Math.round(margin + (i * (inner_width / (data.length - 1))));	// Pixel x
-				py = Math.round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
-				npx = Math.round(margin + (i + 1) * (inner_width / (data.length - 1))); // Next pixel x
-				npy = Math.round(margin + inner_height - (nextPoint - min) / (max - min) * inner_height); // Next pixel y
+				px = round(margin + (i * (inner_width / (data.length - 1))));	// Pixel x
+				py = round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
+				npx = round(margin + (i + 1) * (inner_width / (data.length - 1))); // Next pixel x
+				npy = round(margin + inner_height - (data[i + 1] - min) / (max - min) * inner_height); // Next pixel y
 
 				if (i === 0) {
 					ctx.moveTo(px, py);
 				} else if (i < data.length - 2 && serie.lineSmooth) {
-					xc = (px + npx) / 2;
-					yc = (py + npy) / 2;
-
-					ctx.quadraticCurveTo(px, py, xc, yc);
+					ctx.quadraticCurveTo(px, py, (px + npx) / 2, (py + npy) / 2);
 				} else if (i < data.length && serie.lineSmooth) {
 					ctx.quadraticCurveTo(px, py, npx, npy);
 				} else {
@@ -307,10 +301,10 @@
 			ctx.stroke();
 
 			if (serie.type === 'area') {
-				cy = Math.round(margin + inner_height - (center - min) / (max - min) * inner_height); // Center pixel y
+				cy = round(margin + inner_height - (axis.yCenter - min) / (max - min) * inner_height); // Center pixel y
 
 				ctx.lineTo(px, cy); // Move to center last, in case of area
-				ctx.lineTo(fpx, cy); // Move to center last, in case of area
+				ctx.lineTo(round(margin), cy); // Move to center last, in case of area
 
 				// Empty stroke, as we just want to move the cursor
 				ctx.lineWidth = 0;
@@ -348,11 +342,11 @@
 
 			i = 0;
 			while ((point = data[i++]) || point === 0) {
-				px = Math.round(margin + bar_spacing / 2 + (base_width * (i - 1)));
+				px = round(margin + bar_spacing / 2 + (base_width * (i - 1)));
 				bt = (point <= center) ? center : point; // Bar top
 				bb = (point > center) ? center : point; // Bar bottom
-				py = Math.round(margin + inner_height - (bt - min) / (max - min) * inner_height);
-				bh = Math.round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
+				py = round(margin + inner_height - (bt - min) / (max - min) * inner_height);
+				bh = round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
 
 				graph.ctx.fillRect(px, py, bar_width, bh);
 			}
