@@ -47,6 +47,7 @@ define(['castrato', 'grapho', 'host', 'interface'], function (c, Grapho) {
 					fillStyle: 'rgba(0, 255, 0, 1.0)',
 					strokeStyle: 'rgba(0, 255, 0, 0.2)',
 					type: 'area',
+					x: { axis:1, continous: true },
 					data: [-7, -7, 3, 4, 5, 4, 55, 58, 55, 60, 70, 80, 0, -7, -7, -5, 2, -5, 5, 8, 3, -6, 5, 5]
 				});
 
@@ -71,7 +72,7 @@ define(['castrato', 'grapho', 'host', 'interface'], function (c, Grapho) {
 				data: [7, 6, 5, 4, 4, 4, 4, 7, 7, 7, 5, 5, 4, 3, 3, 4, 5, 6, 7, 7, 2, 8, 5, 5, 4, 2, 4]
 			});
 
-			// Try to change y axis properties of axis 2
+			// Try to change y axis properties of axis 2, and draw a straight line all over the place
 			aGraphoObject.addDataset({
 				strokeStyle: 'rgba(255, 0, 0, 0.2)',
 				type: 'line',
@@ -80,7 +81,7 @@ define(['castrato', 'grapho', 'host', 'interface'], function (c, Grapho) {
 					min: 0,
 					max: 10
 				},
-				data: [3,3,3,3,3,3]
+				data: [[0,3],[37,3]]
 			});
 
 			// Add a nice straight line at 75% of the height, in it's own axis
@@ -140,11 +141,11 @@ define(['castrato', 'grapho', 'host', 'interface'], function (c, Grapho) {
 					center: 0
 				},
 				data: [
-					[0,-60],
-					[32,30],
+					[33,-60],
+					[34,-30],
 					[35,0],
-					[36,-30],
-					[37,-60]
+					[36,30],
+					[37,60]
 				]
 			});
 
@@ -152,19 +153,18 @@ define(['castrato', 'grapho', 'host', 'interface'], function (c, Grapho) {
 			// Getting just as crazy with a smooth line
 			aGraphoObject.addDataset({
 				fillStyle: 'rgba(255, 255, 0, 0.2)',
-				type: 'line',
+				type: 'area',
 				y: { 
 					axis: 5,
 					center: 0
 				},
 				lineSmooth: true,
 				data: [
-					[28,-60],
-					[29,30],
-					[34,0],
-					[35,-30],
-					[36,-30],
-					[37,-0]
+					[33,60],
+					[34,20],
+					[35,0],
+					[36,-20],
+					[37,-60],
 				]
 			});
 

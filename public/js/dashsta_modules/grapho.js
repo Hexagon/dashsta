@@ -41,6 +41,18 @@
 		return key === undef || it.hasOwnProperty(key);
 	}
 
+	function unique (ain) {
+	   var u = {}, a = [];
+	   for(var i = 0, l = ain.length; i < l; ++i){
+	      if(u.hasOwnProperty(ain[i])) {
+	         continue;
+	      }
+	      a.push(ain[i]);
+	      u[ain[i]] = 1;
+	   }
+	   return a;
+	}
+
 	function merge (target, source) {
 		var name;
 
@@ -121,8 +133,6 @@
 			},
 			index = props.axis;
 
-
-
 		if (typeof index === 'number' && isFinite(index) && index % 1 ===0) {
 
 			if (this.yAxises[index] === undef) {
@@ -161,6 +171,8 @@
 		var defaults = {
 				min: 'auto',
 				max: 'auto',
+				continous: false,
+				step: Infinity,
 				minVal: Infinity,
 				maxVal: -Infinity,
 				values: []
@@ -177,9 +189,18 @@
 
 				this.xAxises[index] = defaults;
 
+			} else {
+
+				// Merge current with new settings, if passed
+				if (typeof props === 'object') {
+
+					defaults = merge(this.xAxises[index], props);
+					this.xAxises[index] = defaults;
+
+				}
 			}
 		}
-
+		
 		// ToDo: Merge values
 
 		// Chain
@@ -247,8 +268,6 @@
 	 */
 	prot.pushDataset = function (dataset) {
 
-		//console.log(dataset.y.axis,this.yAxises);
-
 		var yAxis = this.yAxises[dataset.y.axis],
 			xAxis = this.xAxises[dataset.x.axis],
 			i,
@@ -273,9 +292,20 @@
 		// Update axis min/max of axis, last dataset of axis has the control
 		yAxis.maxVal = yAxis.max !== 'auto' ? yAxis.max : Math.max(Math.max.apply(null, cleanDataY), yAxis.maxVal);
 		yAxis.minVal = yAxis.min !== 'auto' ? yAxis.min : Math.min(Math.min.apply(null, cleanDataY), yAxis.minVal);
-
 		xAxis.maxVal = xAxis.max !== 'auto' ? xAxis.max : Math.max(Math.max.apply(null, cleanDataX), xAxis.maxVal);
 		xAxis.minVal = xAxis.min !== 'auto' ? xAxis.min : Math.min(Math.min.apply(null, cleanDataX), xAxis.minVal);
+
+		// Mege unique values of this and previous datasets
+		xAxis.values = unique(xAxis.values.concat(cleanDataX));
+
+		// Sort the unique values
+		xAxis.values.sort(function(a, b){return a-b;});
+
+		// Recalculate smallest step
+		for(i=0;i<xAxis.values.length-1;i++) {
+			step = xAxis.values[i+1] - xAxis.values[i];
+			if( step < xAxis.step ) xAxis.step = step;
+		}
 
 		this.datasets.push(dataset);
 
@@ -327,7 +357,7 @@
 		 * @param {Array} dataset The data datasets
 		 */
 		function RenderLineAndArea (graph, dataset) {
-			var i, point, skip_i,
+			var i, point, skip_i, lstart, lstop,
 				
 				data	= dataset.data,
 				margin 	= dataset.lineWidth / 2,
@@ -338,28 +368,42 @@
 				min 	= yAxis.minVal,
 				max 	= yAxis.maxVal,
 
+				x_stops	= xAxis.continous ? Math.ceil((xAxis.maxVal - xAxis.minVal) / xAxis.step + 1) : xAxis.values.length,
+
 				inner_height 	= graph.h - margin,
 				inner_width 	= graph.w - margin,
 
-				px, py, cy, npx, npy,
+				px, py, cy, npx, npy, fpx,
 
 				// Shortcuts
 				ctx = graph.ctx;	
 
 			ctx.beginPath();
 
+			if (xAxis.continous) {
+				lstart = xAxis.minVal;
+				lstop = xAxis.maxVal+1;
+			} else {
+				lstart = 0;
+				lstop = xAxis.values.length;
+			}
+			
 			skip_i = xAxis.minVal;
-			for(i=xAxis.minVal;i<=xAxis.maxVal;i++) {
+			for(i=lstart;i<lstop;i++) {
 				point = data[skip_i];
+				comp = (xAxis.continous) ? i : xAxis.values[i];
 
 				// We might need to skip some points that are not in the dataset
-				if( point !== undefined && point[0] == i) {
+				if( point !== undefined && (point[0] === comp)) {
 					point = point[1];
 
-					px = round(margin + (i * (inner_width / (xAxis.maxVal - xAxis.minVal + 1 - 1))));	// Pixel x
+					px = round(margin + (i * (inner_width / (x_stops))) + (inner_width/x_stops/2));	// Pixel x
 					py = round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
-					npx = ( data[skip_i + 1] ) ? round(margin + (i + data[skip_i+1][0]-data[skip_i][0]) * (inner_width / (xAxis.maxVal - xAxis.minVal + 1 - 1))) : 0; // Next pixel x
+					npx = ( data[skip_i + 1] ) ? round(margin + (i + data[skip_i+1][0]-data[skip_i][0]) * (inner_width / (x_stops)) + (inner_width/x_stops/2)) : 0; // Next pixel x
 					npy = ( data[skip_i + 1] ) ? round(margin + inner_height - (data[skip_i + 1][1] - min) / (max - min) * inner_height) : 0; // Next pixel y
+
+					// Keep track of first pixel, for later use by area charts
+					if ( skip_i === 0 ) fpx = px;
 
 					if (skip_i === 0) {
 						ctx.moveTo(px, py);
@@ -385,13 +429,14 @@
 			if (dataset.type === 'area') {
 				cy = round(margin + inner_height - (yAxis.center - min) / (max - min) * inner_height); // Center pixel y
 
-				ctx.lineTo(px, cy); // Move to center last, in case of area
-				ctx.lineTo(round(margin), cy); // Move to center last, in case of area
+				ctx.lineTo(px, cy); // Move to center at last col
+				ctx.lineTo(fpx, cy); // Move to center at first col
 
 				// Empty stroke, as we just want to move the cursor
-				ctx.lineWidth = 0;
+				ctx.strokeStyle = 'rgba(0,0,0,0)';
 				ctx.stroke();
 
+				// Fill the area
 				ctx.fillStyle = dataset.fillStyle;	
 				ctx.fill();
 			}
@@ -403,7 +448,7 @@
 		 * @param {Array} dataset The data datasets
 		 */
 		function RenderBarChart (graph, dataset) {
-			var i, point, skip_i,
+			var i, point, skip_i, index, lstart, lstop,
 				
 				data	= dataset.data,
 				margin	= 1,
@@ -415,8 +460,10 @@
 				max		= yAxis.maxVal,
 				center	= yAxis.center,
 
+				x_stops	= xAxis.continous ? Math.ceil((xAxis.maxVal - xAxis.minVal) / xAxis.step + 1) : xAxis.values.length,
+				
 				inner_height 	= graph.h - margin,
-				base_width 		= ((graph.w - margin) / (xAxis.maxVal - xAxis.minVal + 1)), // This should be divided with the minimum distance between steps
+				base_width 		= ((graph.w - margin) / (x_stops)), // This should be divided with the minimum distance between steps
 				bar_spacing 	= base_width - (base_width * dataset.barWidthPrc / 100),
 				bar_width	 	= base_width - bar_spacing,
 
@@ -424,12 +471,21 @@
 
 			graph.ctx.fillStyle = dataset.fillStyle;
 
+			if (xAxis.continous) {
+				lstart = xAxis.minVal;
+				lstop = xAxis.maxVal+1;
+			} else {
+				lstart = 0;
+				lstop = xAxis.values.length;
+			}
+			
 			skip_i = xAxis.minVal;
-			for(i=xAxis.minVal;i<=xAxis.maxVal;i++) {
+			for(i=lstart;i<lstop;i++) {
 				point = data[skip_i];
+				comp = (xAxis.continous) ? i : xAxis.values[i];
 
 				// We might need to skip some points that are not in the dataset
-				if( point !== undefined && point[0] == i) {
+				if( point !== undefined && (point[0] === comp)) {
 					point = point[1];
 
 					px = round(margin + bar_spacing / 2 + (base_width * i));
