@@ -9,7 +9,10 @@
 }(this, function () {
 	// A collection of all instantiated Grapho's
 	var graphos = [],
-		toString = Object.prototype.toString;
+		toString = Object.prototype.toString,
+		isArray = Array.isArray || function (it) {
+			return toString.call(it) == '[object Array]';
+		};
 
 	function isUntypedObject (it) {
 		var key;
@@ -99,7 +102,6 @@
 
 		// Init done
 		this.done = true;
-
 	}
 
 	/**
@@ -108,7 +110,6 @@
 	 * @return {Object}                `this`
 	 */
 	Grapho.prototype.initAxis = function (index, properties) {
-
 		var defaults = {
 			yMin: 'auto',
 			yMax: 'auto',
@@ -118,15 +119,16 @@
 			series: []
 		};
 
-		if ( typeof index === 'number' && isFinite(index) && index%1===0 ) {
-			if ( this.axises[index] === undefined ) {
+		if (typeof index === 'number' && isFinite(index) && index % 1 ===0) {
+			if (this.axises[index] === undefined) {
 
 				// Merge properties, if passed
-				if ( typeof properties === 'object' ) {
+				if (typeof properties === 'object') {
 					defaults = merge(defaults, properties);
 				}
 
 				this.axises[index] = defaults;
+
 				if (this.debug) console.info('Grapho.checkAxis: New axis with index ', index, 'created');
 			}
 		} else {
@@ -143,20 +145,17 @@
 	 * @return {Object}                `this`
 	 */
 	Grapho.prototype.addSeries = function (series) {
+		var seriesIsArray = isArray(series);
 
 		if (this.debug) console.info('Adding series');
 
 		// Check that we got some type of valid object as parameter
 		if (typeof series !== 'object' ) {
-
 			console.error('Grapho.addSeries: series does not seem to be a valid javascript object.');
 			return this;
-
-		} else if (typeof series === 'object' && (series.data === undefined && !Array.isArray(series)) ) {
-
+		} else if (!seriesIsArray && !series.data) {
 			console.error('Grapho.addSeries: passed parameter is neither an array, nor containing series.data.');
 			return this;
-
 		}
 
 		// Define some reasonable defaults for each series
@@ -180,30 +179,24 @@
 
 			// type: 'bar'
 			barWidthPrc: 90 
-
 		};
 
-		if (Array.isArray(series)) {
-
-			// Got pure array
+		// `series` can be either an array or an object.
+		if (seriesIsArray) {
 			defaults.data = series;
-
 		} else {
-
-			// Got full object
 			defaults = merge(defaults, series);
-
 		}
 
 		// Make sure the axis exists
 		this.initAxis(defaults.yAxis, { yMin: defaults.yMin, yMax: defaults.yMax, yCenter: defaults.yCenter });
 
 		// Push series to axis
-		if (this.debug) console.info('Pushing generated series object to axis', defaults);
 		this.pushSeries(defaults);
+		if (this.debug) console.info('Pushing generated series object to axis', defaults);
 		
 		// Redraw, but only if the object is fully initiated
-		if(this.done) this.redraw();
+		if (this.done) this.redraw();
 
 		// Chain
 		return this;
@@ -215,22 +208,15 @@
 	 * @return {Object}                `this`
 	 */
 	Grapho.prototype.pushSeries = function (series) {
+		var yAxis = this.axises[series.yAxis];
 
 		if (this.debug) console.info('Pushing series', series );
 
 		// Update axis min/max of axis, last series of axis has the control
-		if ( this.axises[ series.yAxis ].yMin == 'auto' ) {
-			this.axises[ series.yAxis ].yMinVal = Math.min(Math.min.apply(null, series.data), this.axises[ series.yAxis ].yMinVal);
-		} else {
-			this.axises[ series.yAxis ].yMinVal = this.axises[ series.yAxis ].yMin;
-		}
-		if ( this.axises[ series.yAxis ].yMax == 'auto' ) {
-			this.axises[ series.yAxis ].yMaxVal = Math.max(Math.max.apply(null, series.data), this.axises[ series.yAxis ].yMaxVal);
-		} else {
-			this.axises[ series.yAxis ].yMaxVal = this.axises[ series.yAxis ].yMax;
-		}
+		yAxis.yMaxVal = yAxis.yMax !== 'auto' ? yAxis.yMax : Math.max(Math.max.apply(null, series.data), yAxis.yMaxVal);
+		yAxis.yMinVal = yAxis.yMin !== 'auto' ? yAxis.yMin : Math.min(Math.min.apply(null, series.data), yAxis.yMinVal);
 
-		this.axises[ series.yAxis ].series.push(series);
+		yAxis.series.push(series);
 
 		// Chain
 		return this;
@@ -242,15 +228,15 @@
 	 * @return {Object}                `this`
 	 */
 	Grapho.prototype.place = function (newDestination) { 
-		this.destination = newDestination;
+		var method = (newDestination && (newDestination.appendChild ? 'appendChild' : 'append'));
 
-		if ('appendChild' in this.destination) {
-			this.destination.appendChild(this.canvas);
-		} else {
-			if (this.debug) console.error('Graph placed in invalid destination');
+		if (method) {
+			this.destination = newDestination;
+			this.destination[method](this.canvas);
+			this.resize(this);
+		} else if (this.debug) {
+			console.error('Graph placed in invalid destination');
 		}
-
-		this.resize(this);
 
 		return this;
 	};
@@ -260,8 +246,9 @@
 	 * @return {Object} `this`.
 	 */
 	Grapho.prototype.remove = function () {
-		if (this.container.width == 'auto' || this.container.height == 'auto')
-		window.removeEventListener('resize', resize);
+		if (this.container.width === 'auto' || this.container.height === 'auto') {
+			window.removeEventListener('resize', resize);
+		}
 
 		// ToDo, remove actual element
 		canvas.parentElement.removeChild(canvas);
@@ -273,129 +260,152 @@
 	 * Redraws the canvas
 	 * @return {Object} `this`.
 	 */
-	Grapho.prototype.redraw = function () {
-		var margin,
-			inner_height,
-			inner_width,
-			base_width,
-			bar_spacing,
-			bar_width,
-			i,
-			series,
-			cur,
-			data,
+	Grapho.prototype.redraw = (function () {
 
-			fpx, px, py, npx, npy, xc, yc, bb, bt, cy,
+		/**
+		 * Renders Line and Area chart
+		 * @param {Object} graph The Grapho object
+		 * @param {Array} serie The data series
+		 * @param {Object} axis  Axis information
+		 */
+		function RenderLineAndArea (graph, serie, axis) {
+			var i, point, nextPoint,
+				
+				data	= serie.data,
+				margin 	= serie.lineWidth / 2,
 
-			// Shortcuts
-			axises = this.axises,
-			min,
-			max;
+				min 	= axis.yMinVal,
+				max 	= axis.yMaxVal,
+				center 	= axis.yCenter,
 
-		if (this.debug) console.info('Redrawing canvas',series);
+				inner_height 	= graph.height - margin,
+				inner_width 	= graph.width - margin,
 
-		if (!axises.length) {
-			return;
-		}
+				px, py, cy, npx, npy,
 
-		// Clear canvas before drawing
-		this.context.clearRect ( 0 , 0 , this.width , this.height );
+				fpx = Math.round(margin), // First pixel x;
 
-		for (var ai=1; ai<=axises.length-1; ai++) {
+				// Shortcuts
+				context = graph.context;	
 
-			series = axises[ai].series;
-			min = axises[ai].yMinVal;
-			max = axises[ai].yMaxVal;
-			center = axises[ai].yCenter;
+			context.beginPath();
 
-			for (var si=0; si<series.length; si++) {
+			i = 0;
+			while ((point = data[i]) || point === 0) {
+				nextPoint = data[i + 1];
 
-				cur = series[si];
-				data = cur.data;
+				px = Math.round(margin + (i * (inner_width / (data.length - 1))));	// Pixel x
+				py = Math.round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
+				npx = Math.round(margin + (i + 1) * (inner_width / (data.length - 1))); // Next pixel x
+				npy = Math.round(margin + inner_height - (nextPoint - min) / (max - min) * inner_height); // Next pixel y
 
-				if (cur.type === 'line' || cur.type === 'area') {
+				if (i === 0) {
+					context.moveTo(px, py);
+				} else if (i < data.length - 2 && serie.lineSmooth) {
+					xc = (px + npx) / 2;
+					yc = (py + npy) / 2;
 
-					margin = cur.lineWidth / 2;
-					inner_height = this.height - margin;
-					inner_width = this.width - margin;
-
-					this.context.beginPath();
-					
-					fpx = Math.round(margin);	// First pixel x
-
-					for (i = 0; i < data.length; i++) {
-
-						px = Math.round(margin + (i * (inner_width / (data.length - 1))));	// Pixel x
-						py = Math.round(margin + inner_height - (data[i] - min) / (max - min) * inner_height); // Pixel y
-						cy = Math.round(margin + inner_height - (center - min) / (max - min) * inner_height); // Center pixel y
-						npx = Math.round(margin + (i + 1) * (inner_width / (data.length-1))); // Next pixel x
-						npy = Math.round(margin + inner_height - (data[i + 1] - min) / (max - min) * inner_height); // Next pixel y
-
-						if (i === 0) {
-							this.context.moveTo(px, py);
-						} else if(i < data.length - 2 && cur.lineSmooth) {
-							xc = (px + npx) / 2;
-							yc = (py + npy) / 2;
-
-							this.context.quadraticCurveTo(px, py, xc, yc);
-						} else if(i < data.length && cur.lineSmooth) {
-							this.context.quadraticCurveTo(px, py, npx, npy);
-						} else {
-							this.context.lineTo(px,py);
-						}
-					}
-
-					this.context.lineWidth = cur.lineWidth;
-					this.context.strokeStyle = cur.strokeStyle;
-					this.context.stroke();
-
-					if (cur.type === 'area') {
-						this.context.lineTo(px, cy); // Move to center last, in case of area
-						this.context.lineTo(fpx, cy); // Move to center last, in case of area
-
-						// Empty stroke, as we just want to move the cursor
-						this.context.strokeStyle = 'rgba(0,0,0,0)';
-						this.context.lineWidth = 0;
-						this.context.stroke();
-					}
-
-					if (cur.type === 'area') {
-						this.context.fillStyle = cur.fillStyle;	
-						this.context.fill();
-					} 
-					
-
-				} else if (cur.type == 'bar') {
-
-					margin = 1;
-					inner_height = this.height - margin;
-					inner_width = this.width - margin;
-					base_width = (inner_width / data.length);
-					bar_spacing = base_width-(base_width*cur.barWidthPrc/100);
-					bar_width = base_width - bar_spacing;
-
-					this.context.fillStyle = cur.fillStyle;
-
-					for (i = 0; i < data.length; i++) {
-
-						px = Math.round(margin + bar_spacing / 2 + (base_width * i));
-						bt = (data[i]<=center) ? center : data[i], // Bar top
-						bb = (data[i]>center) ? center : data[i], // Bar bottom
-						py = Math.round(margin + inner_height - (bt - min) / (max - min) * inner_height),
-						bh = Math.round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
-
-						this.context.fillRect(px, py, bar_width, bh);
-
-					}
-
+					context.quadraticCurveTo(px, py, xc, yc);
+				} else if (i < data.length && serie.lineSmooth) {
+					context.quadraticCurveTo(px, py, npx, npy);
+				} else {
+					context.lineTo(px, py);
 				}
 
+				i++;
 			}
 
+			context.lineWidth = serie.lineWidth;
+			context.strokeStyle = serie.strokeStyle;
+			context.stroke();
+
+			if (serie.type === 'area') {
+				cy = Math.round(margin + inner_height - (center - min) / (max - min) * inner_height); // Center pixel y
+
+				context.lineTo(px, cy); // Move to center last, in case of area
+				context.lineTo(fpx, cy); // Move to center last, in case of area
+
+				// Empty stroke, as we just want to move the cursor
+				context.strokeStyle = 'rgba(0,0,0,0)';
+				context.lineWidth = 0;
+				context.stroke();
+
+				context.fillStyle = serie.fillStyle;	
+				context.fill();
+			}
 		}
 
-		return this;
-	};
+		/**
+		 * Renders a bar chart
+		 * @param {Object} graph The Grapho object
+		 * @param {Array} serie The data series
+		 * @param {Object} axis  Axis information
+		 */
+		function RenderBarChart (graph, serie, axis) {
+			var i, point,
+				
+				data	= serie.data,
+				margin 	= 1,
+
+				min 	= axis.yMinVal,
+				max 	= axis.yMaxVal,
+				center 	= axis.yCenter,
+
+				inner_height 	= graph.height - margin,
+				inner_width 	= graph.width - margin,
+				base_width 		= (inner_width / data.length),
+				bar_spacing 	= base_width - (base_width * serie.barWidthPrc / 100),
+				bar_width	 	= base_width - bar_spacing,
+
+				px, bt, bb, py, bh;
+
+			graph.context.fillStyle = serie.fillStyle;
+
+			i = 0;
+			while ((point = data[i++]) || point === 0) {
+				px = Math.round(margin + bar_spacing / 2 + (base_width * (i - 1)));
+				bt = (point <= center) ? center : point; // Bar top
+				bb = (point > center) ? center : point; // Bar bottom
+				py = Math.round(margin + inner_height - (bt - min) / (max - min) * inner_height);
+				bh = Math.round(margin + inner_height - (bb - min) / (max - min) * inner_height) - py;
+
+				graph.context.fillRect(px, py, bar_width, bh);
+			}
+		}
+
+		/**
+		 * The front `redraw` methods.
+		 * Calls the appropriate private rendering function.
+		 * @return {Object} `this`
+		 */
+		return function () {
+			var i, x,
+				serie,
+				axis;
+
+			if (this.debug) console.info('Redrawing canvas');
+
+			if (this.axises.length) {
+				// Clear canvas before drawing
+				this.context.clearRect(0, 0, this.width, this.height);
+
+				i = 1; // Why one-based?
+				while ((axis = this.axises[i++])) {
+
+					x = 0;
+					while ((serie = axis.series[x++])) {
+						if (serie.type === 'bar') {
+							RenderBarChart(this, serie, axis);
+						} else if (serie.type === 'line' || serie.type === 'area') {
+							RenderLineAndArea(this, serie, axis);
+						} 
+					}
+				}
+			}
+
+			return this;
+		};
+	}());
 
 	/**
 	 * Something something
