@@ -51,25 +51,47 @@ define(['castrato', 'grapho', 'host', 'interface'], function (c, Grapho) {
 					data: [-7, -7, 3, 4, 5, 4, 55, 58, 55, 60, 70, 80, 0, -7, -7, -5, 2, -5, 5, 8, 3, -6, 5, 5]
 				});
 
-			// Add data post-creation using a custom object, transparent bars (color uses context.fillStyle syntax)
-			// This is supposed to mess up the y axis pretty much
-			aGraphoObject.addDataset({
-				fillStyle: 'rgba(0, 255, 0, 0.2)',
-				type: 'bar',
-				data: [1, 2, 3, 5, 8, 7, 5, 4, 66, 5, 6, 5, 2, 2, 2, 6, 7, 2, 66]
-			});
-
 			// Add data post-creation using defaults and maxed out object
 			// This one rocks it's own y axis
 			aGraphoObject.addDataset({
-				strokeStyle: 'rgba(255, 0, 0, 0.2)',
-				type: 'line',
+				strokeStyle: 'rgba(255, 0, 0, 1)',
+				type: 'area',
+				lineWidth: 3,
+				lineDots: true,
+				lineSmooth: false,
+				dotWidth: 10,
 				y: { 
 					axis: 2,
 					min: -50,
 					max: 50
 				},
 				data: [7, 6, 5, 4, 4, 4, 4, 7, 7, 7, 5, 5, 4, 3, 3, 4, 5, 6, 7, 7, 2, 8, 5, 5, 4, 2, 4]
+			});
+
+			// Add data post-creation using defaults and maxed out object
+			// This one rocks it's own y axis
+			aGraphoObject.addDataset({
+				strokeStyle: 'rgba(0, 255, 0, 1)',
+				type: 'scatter',
+				dotWidth: 3,
+				x: {
+					axis: 2,
+					continous: true
+				},
+				y: { 
+					axis: 2,
+					min: -50,
+					max: 50
+				},
+				data: [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,6],[1,1],[1,2],[3,3],[3,4],[4,5],[4,6],[2,6]]
+			});
+
+			// Add data post-creation using a custom object, transparent bars (color uses context.fillStyle syntax)
+			// This is supposed to mess up the y axis pretty much
+			aGraphoObject.addDataset({
+				fillStyle: 'rgba(0, 255, 0, 0.2)',
+				type: 'bar',
+				data: [1, 2, 3, 5, 8, 7, 5, 4, 66, 5, 6, 5, 2, 2, 2, 6, 7, 2, 66]
 			});
 
 			// Try to change y axis properties of axis 2, and draw a straight line all over the place

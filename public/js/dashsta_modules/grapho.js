@@ -225,7 +225,7 @@
 		// Define some reasonable defaults for each dataset
 		var defaults = {
 
-			type: 'line',
+			type: 'line', // line || scatter || area || bar
 
 			x: { axis: 1 },
 			y: { axis: 1 },
@@ -235,6 +235,10 @@
 			lineSmooth: true,
 			strokeStyle: '#9494BA',
 			fillStyle: '#BA9494',
+			lineDots: false,
+
+			// type: scatter || lineDots: true
+			dotWidth: 4,
 
 			// type: 'bar'
 			barWidthPrc: 90 
@@ -356,7 +360,7 @@
 		 * @param {Object} graph The Grapho object
 		 * @param {Array} dataset The data datasets
 		 */
-		function RenderLineAndArea (graph, dataset) {
+		function RenderLineArea (graph, dataset) {
 			var i, point, skip_i, lstart, lstop,
 				
 				data	= dataset.data,
@@ -378,7 +382,7 @@
 				// Shortcuts
 				ctx = graph.ctx;	
 
-			ctx.beginPath();
+			if (dataset.type === 'area' || dataset.type === 'line') ctx.beginPath();
 
 			if (xAxis.continous) {
 				lstart = xAxis.minVal;
@@ -403,17 +407,18 @@
 					npy = ( data[skip_i + 1] ) ? round(margin + inner_height - (data[skip_i + 1][1] - min) / (max - min) * inner_height) : 0; // Next pixel y
 
 					// Keep track of first pixel, for later use by area charts
-					if ( skip_i === 0 ) fpx = px;
-
-					if (skip_i === 0) {
-						ctx.moveTo(px, py);
-					} else if (skip_i < data.length - 2 && dataset.lineSmooth) {
-						ctx.quadraticCurveTo(px, py, (px + npx) / 2, (py + npy) / 2);
-						//ctx.quadraticCurveTo(px, py, npx, npy);
-					} else if (skip_i < data.length - 1 && dataset.lineSmooth) {
-						ctx.quadraticCurveTo(px, py, npx, npy);
-					} else {
-						ctx.lineTo(px, py);
+					if( dataset.type !== 'scatter') {
+						if ( skip_i === 0 ) fpx = px;
+						if (skip_i === 0) {
+							ctx.moveTo(px, py);
+						} else if (skip_i < data.length - 2 && dataset.lineSmooth) {
+							ctx.quadraticCurveTo(px, py, (px + npx) / 2, (py + npy) / 2);
+							//ctx.quadraticCurveTo(px, py, npx, npy);
+						} else if (skip_i < data.length - 1 && dataset.lineSmooth) {
+							ctx.quadraticCurveTo(px, py, npx, npy);
+						} else {
+							ctx.lineTo(px, py);
+						}
 					}
 
 					skip_i++;
@@ -422,9 +427,11 @@
 
 			}
 
-			ctx.lineWidth = dataset.lineWidth;
-			ctx.strokeStyle = dataset.strokeStyle;
-			ctx.stroke();
+			if (dataset.type === 'area' || dataset.type === 'line') {
+				ctx.lineWidth = dataset.lineWidth;
+				ctx.strokeStyle = dataset.strokeStyle;
+				ctx.stroke();
+			}
 
 			if (dataset.type === 'area') {
 				cy = round(margin + inner_height - (yAxis.center - min) / (max - min) * inner_height); // Center pixel y
@@ -440,6 +447,66 @@
 				ctx.fillStyle = dataset.fillStyle;	
 				ctx.fill();
 			}
+		}
+
+		/**
+		 * Renders Line and Area chart
+		 * @param {Object} graph The Grapho object
+		 * @param {Array} dataset The data datasets
+		 */
+		function RenderScatter (graph, dataset) {
+			var i, point, skip_i, lstart, lstop,
+				
+				data	= dataset.data,
+				margin 	= dataset.lineWidth / 2,
+
+				yAxis 	= graph.yAxises[dataset.y.axis],
+				xAxis 	= graph.xAxises[dataset.x.axis],
+
+				min 	= yAxis.minVal,
+				max 	= yAxis.maxVal,
+
+				x_stops	= xAxis.continous ? Math.ceil((xAxis.maxVal - xAxis.minVal) / xAxis.step + 1) : xAxis.values.length,
+
+				inner_height 	= graph.h - margin,
+				inner_width 	= graph.w - margin,
+
+				px, py, cy, npx, npy, fpx,
+
+				// Shortcuts
+				ctx = graph.ctx;	
+
+			if (xAxis.continous) {
+				lstart = xAxis.minVal;
+				lstop = xAxis.maxVal+1;
+			} else {
+				lstart = 0;
+				lstop = xAxis.values.length;
+			}
+			
+			skip_i = xAxis.minVal;
+			for(i=lstart;i<lstop;i++) {
+				point = data[skip_i];
+				comp = (xAxis.continous) ? i : xAxis.values[i];
+
+				// We might need to skip some points that are not in the dataset
+				if( point !== undefined && (point[0] === comp)) {
+					point = point[1];
+
+					px = round(margin + (i * (inner_width / (x_stops))) + (inner_width/x_stops/2));	// Pixel x
+					py = round(margin + inner_height - (point - min) / (max - min) * inner_height); // Pixel y
+
+					ctx.beginPath();
+			     	ctx.arc(px, py, dataset.dotWidth, 0, 2 * Math.PI, false);
+			     	ctx.fillStyle = dataset.strokeStyle;
+			     	ctx.fill();
+
+					skip_i++;
+
+				}
+
+			}
+
 		}
 
 		/**
@@ -520,7 +587,12 @@
 				if (dataset.type === 'bar') {
 					RenderBarChart(this, dataset);
 				} else if (dataset.type === 'line' || dataset.type === 'area') {
-					RenderLineAndArea(this, dataset);
+					RenderLineArea(this, dataset);
+					if(dataset.lineDots) {
+						RenderScatter(this, dataset);
+					}
+				} else if (dataset.type === 'scatter') {
+					RenderScatter(this, dataset);
 				} 
 			}
 
