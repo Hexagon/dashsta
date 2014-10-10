@@ -193,10 +193,8 @@
 
 				// Merge current with new settings, if passed
 				if (typeof props === 'object') {
-
 					defaults = merge(this.xAxises[index], props);
 					this.xAxises[index] = defaults;
-
 				}
 			}
 		}
@@ -268,26 +266,26 @@
 	/**
 	 * Push finished datasets object to axis
 	 * @param  {Object} datasets object containing data, or pure data array
-	 * @return {Object}                `this`
+	 * @return {Object} `this`
 	 */
 	prot.pushDataset = function (dataset) {
 
 		var yAxis = this.yAxises[dataset.y.axis],
 			xAxis = this.xAxises[dataset.x.axis],
 			i,
-			data,
 			cleanDataY = [],
-			cleanDataX = [];
+			cleanDataX = [],
+			datasetLen = dataset.data.length;
 
 		// If we got a single element dataset ( [4,3,2,...] , expand it into [ [0,4] , [1,3] , [2,2] , ]
-		if ( !isArray(dataset.data[0]) ) {
-			for(i=0;i<dataset.data.length;i++) {
+		if (!isArray(dataset.data[0])) {
+			for (i = 0; i < datasetLen; i++) {
 				cleanDataY[i] = dataset.data[i];
 				cleanDataX[i] = i;
-				dataset.data[i] = [i,dataset.data[i]];
+				dataset.data[i] = [i, dataset.data[i]];
 			}
 		} else {
-			for(i=0;i<dataset.data.length;i++) {
+			for (i = 0; i < datasetLen; i++) {
 				cleanDataY[i] = dataset.data[i][1];
 				cleanDataX[i] = dataset.data[i][0];
 			}
@@ -303,12 +301,13 @@
 		xAxis.values = unique(xAxis.values.concat(cleanDataX));
 
 		// Sort the unique values
-		xAxis.values.sort(function(a, b){return a-b;});
+		xAxis.values.sort(function (a, b) { return a - b; });
 
 		// Recalculate smallest step
-		for(i=0;i<xAxis.values.length-1;i++) {
-			step = xAxis.values[i+1] - xAxis.values[i];
-			if( step < xAxis.step ) xAxis.step = step;
+		for (i = 0; i < xAxis.values.length; i++) {
+			if ((step = xAxis.values[i + 1] - xAxis.values[i]) < xAxis.step) {
+				xAxis.step = step;
+			}
 		}
 
 		this.datasets.push(dataset);
@@ -422,9 +421,7 @@
 					}
 
 					skip_i++;
-
 				}
-
 			}
 
 			if (dataset.type === 'area' || dataset.type === 'line') {
@@ -547,12 +544,12 @@
 			}
 			
 			skip_i = xAxis.minVal;
-			for(i=lstart;i<lstop;i++) {
+			for (i = lstart; i < lstop; i++) {
 				point = data[skip_i];
 				comp = (xAxis.continous) ? i : xAxis.values[i];
 
 				// We might need to skip some points that are not in the dataset
-				if( point !== undefined && (point[0] === comp)) {
+				if (point && point[0] === comp) {
 					point = point[1];
 
 					px = round(margin + bar_spacing / 2 + (base_width * i));
